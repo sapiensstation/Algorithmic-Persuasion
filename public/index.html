@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-white flex flex-col items-center justify-center h-screen font-sans">
+
+    <h1 class="text-2xl mb-8 text-gray-800">Feel Free to Ask any Questions!</h1>
+
+    <div class="relative w-full max-w-2xl px-4">
+        <div
+            class="flex items-center border border-gray-200 rounded-full px-6 py-3 shadow-sm hover:shadow-md transition-shadow">
+            <span class="text-gray-400 mr-3 text-xl">+</span>
+            <input id="userInput" type="text" placeholder="Ask anything"
+                class="w-full outline-none text-gray-700 bg-transparent"
+                onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()" class="ml-3 text-blue-500 hover:text-blue-600 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 10l9-6 9 6-9 6-9-6zm0 0v4a9 9 0 009 9 9 9 0 009-9v-4" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="responseArea" class="mt-6 w-full max-w-2xl px-4 hidden">
+            <div class="bg-gray-100 rounded-xl p-4 shadow-sm">
+                <p id="botAnswer" class="text-gray-800 text-lg"></p>
+                <!-- <p id="confidence" class="text-sm text-gray-400 mt-2"></p> -->
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const responseArea = document.getElementById('responseArea');
+            const botAnswer = document.getElementById('botAnswer');
+            const confidence = document.getElementById('confidence');
+
+            if (!input.value.trim()) return;
+
+            botAnswer.innerText = 'Thinking...';
+            if (confidence) confidence.innerText = '';
+            responseArea.classList.remove('hidden');
+
+            const res = await fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input.value }),
+            });
+
+            const data = await res.json();
+
+            botAnswer.innerText = data.answer;
+            if (confidence) confidence.innerText = `Confidence: ${data.confidence}`;
+
+            input.value = '';
+        }
+    </script>
+
+</body>
+
+</html>
