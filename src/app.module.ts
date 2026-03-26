@@ -9,7 +9,7 @@ import { FaqModule } from './faq.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(
-      process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/thesis_chatbot',
+      process.env.MONGODB_URI || 'mongodb+srv://Algorithmic_Persuasion_admin:qBqMEPcUNdXUR3k6@cluster0.c74rfvw.mongodb.net/',
     ),
     FaqModule,
   ],
