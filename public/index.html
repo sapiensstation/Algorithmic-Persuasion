@@ -4,64 +4,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
+    <title>Algorithmic Persuasion</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-white flex flex-col items-center justify-center h-screen font-sans">
+<body class="bg-gray-50 font-sans flex flex-col h-screen overflow-hidden">
 
-    <h1 class="text-2xl mb-8 text-gray-800">Feel Free to Ask any Questions!</h1>
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
+        <h1 class="text-base sm:text-lg font-semibold text-gray-800">Algorithmic Persuasion</h1>
+        <a href="/upload" class="text-sm text-blue-500 hover:text-blue-600 font-medium transition">Upload FAQ Data</a>
+    </header>
 
-    <div class="relative w-full max-w-2xl px-4">
-        <div
-            class="flex items-center border border-gray-200 rounded-full px-6 py-3 shadow-sm hover:shadow-md transition-shadow">
-            <span class="text-gray-400 mr-3 text-xl">+</span>
-            <input id="userInput" type="text" placeholder="Ask anything"
-                class="w-full outline-none text-gray-700 bg-transparent"
-                onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button onclick="sendMessage()" class="ml-3 text-blue-500 hover:text-blue-600 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 10l9-6 9 6-9 6-9-6zm0 0v4a9 9 0 009 9 9 9 0 009-9v-4" />
-                </svg>
-            </button>
-        </div>
-
-        <div id="responseArea" class="mt-6 w-full max-w-2xl px-4 hidden">
-            <div class="bg-gray-100 rounded-xl p-4 shadow-sm">
-                <p id="botAnswer" class="text-gray-800 text-lg"></p>
-                <!-- <p id="confidence" class="text-sm text-gray-400 mt-2"></p> -->
+    <!-- Chat history area -->
+    <main id="chatHistory" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+        <div class="max-w-2xl mx-auto space-y-4">
+            <!-- Welcome message -->
+            <div class="flex justify-center">
+                <p class="text-sm text-gray-400">Ask anything below to get started</p>
             </div>
         </div>
+    </main>
 
+    <!-- Input area (sticky at bottom) -->
+    <div class="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 shrink-0">
+        <div class="max-w-2xl mx-auto">
+            <div class="flex items-center border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-shadow bg-white">
+                <input
+                    id="userInput"
+                    type="text"
+                    placeholder="Ask anything..."
+                    class="flex-1 outline-none text-gray-700 bg-transparent text-sm sm:text-base min-w-0"
+                    onkeypress="if(event.key === 'Enter') sendMessage()"
+                >
+                <button
+                    onclick="sendMessage()"
+                    id="sendBtn"
+                    type="button"
+                    class="ml-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-full p-2 transition shrink-0"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
+        const chatHistory = document.getElementById('chatHistory').querySelector('.space-y-4');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function appendMessage(role, text) {
+            const wrapper = document.createElement('div');
+            wrapper.className = role === 'user'
+                ? 'flex justify-end'
+                : 'flex justify-start';
+
+            const bubble = document.createElement('div');
+            bubble.className = role === 'user'
+                ? 'bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base break-words'
+                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base shadow-sm break-words whitespace-pre-line';
+
+            bubble.textContent = text;
+            wrapper.appendChild(bubble);
+            chatHistory.appendChild(wrapper);
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        function appendTyping() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex justify-start';
+            wrapper.id = 'typingIndicator';
+
+            wrapper.innerHTML = `
+                <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1 items-center">
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                </div>`;
+            chatHistory.appendChild(wrapper);
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
         async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const responseArea = document.getElementById('responseArea');
-            const botAnswer = document.getElementById('botAnswer');
-            const confidence = document.getElementById('confidence');
+            const message = userInput.value.trim();
+            if (!message) return;
 
-            if (!input.value.trim()) return;
+            appendMessage('user', message);
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            appendTyping();
 
-            botAnswer.innerText = 'Thinking...';
-            if (confidence) confidence.innerText = '';
-            responseArea.classList.remove('hidden');
-
-            const res = await fetch('/ask', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: input.value }),
-            });
-
-            const data = await res.json();
-
-            botAnswer.innerText = data.answer;
-            if (confidence) confidence.innerText = `Confidence: ${data.confidence}`;
-
-            input.value = '';
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message }),
+                });
+                const data = await res.json();
+                document.getElementById('typingIndicator')?.remove();
+                appendMessage('bot', data.answer);
+            } catch {
+                document.getElementById('typingIndicator')?.remove();
+                appendMessage('bot', 'Something went wrong. Please try again.');
+            } finally {
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
         }
     </script>
 

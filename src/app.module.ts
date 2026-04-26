@@ -9,7 +9,9 @@ import { FaqModule } from './faq.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(
-      process.env.MONGODB_URI || 'mongodb+srv://Algorithmic_Persuasion_admin:qBqMEPcUNdXUR3k6@cluster0.c74rfvw.mongodb.net/',
+      process.env.MONGODB_URI ||
+        'mongodb+srv://Algorithmic_Persuasion_admin:qBqMEPcUNdXUR3k6@cluster0.c74rfvw.mongodb.net/thesis_chatbot',
+      { retryAttempts: 5, retryDelay: 3000 },
     ),
     FaqModule,
   ],
@@ -17,4 +19,3 @@ import { FaqModule } from './faq.module';
   providers: [AppService],
 })
 export class AppModule {}
-
