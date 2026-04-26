@@ -6,91 +6,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorithmic Persuasion</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Hide the welcome state once chat starts */
+        
+        body.has-messages #welcome {
+            display: none;
+        }
+        /* Empty state: input centered vertically on desktop, anchored at bottom on mobile */
+        
+        @media (min-width: 768px) {
+            body:not(.has-messages) #composer {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+                max-width: 42rem;
+                padding: 0 1.5rem;
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-gray-50 font-sans flex flex-col h-screen overflow-hidden">
+<body class="bg-white font-sans flex flex-col h-[100dvh] overflow-hidden relative">
 
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between shrink-0">
-        <h1 class="text-base sm:text-lg font-semibold text-gray-800">Algorithmic Persuasion</h1>
-        <a href="/upload" class="text-sm text-blue-500 hover:text-blue-600 font-medium transition">Upload FAQ Data</a>
-    </header>
-
-    <!-- Chat history area -->
-    <main id="chatHistory" class="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-        <div class="max-w-2xl mx-auto space-y-4">
-            <!-- Welcome message -->
-            <div class="flex justify-center">
-                <p class="text-sm text-gray-400">Ask anything below to get started</p>
+    <!-- Chat history (scrollable) -->
+    <main id="chatHistory" class="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-4">
+        <div class="max-w-2xl mx-auto w-full">
+            <!-- Welcome / empty state -->
+            <div id="welcome" class="text-center pt-10 md:pt-0 md:pb-32">
+                <h1 class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-2">Algorithmic Persuasion</h1>
+                <p class="text-sm text-gray-500">Feel Free to Ask any Questions</p>
             </div>
+            <!-- Messages get appended here -->
+            <div id="messages" class="space-y-4"></div>
         </div>
     </main>
 
-    <!-- Input area (sticky at bottom) -->
-    <div class="bg-white border-t border-gray-200 px-4 sm:px-6 py-3 shrink-0">
+    <!-- Composer (input area) -->
+    <div id="composer" class="px-4 sm:px-6 pb-4 pt-2 bg-white shrink-0">
         <div class="max-w-2xl mx-auto">
             <div class="flex items-center border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:shadow-md transition-shadow bg-white">
-                <input
-                    id="userInput"
-                    type="text"
-                    placeholder="Ask anything..."
-                    class="flex-1 outline-none text-gray-700 bg-transparent text-sm sm:text-base min-w-0"
-                    onkeypress="if(event.key === 'Enter') sendMessage()"
-                >
-                <button
-                    onclick="sendMessage()"
-                    id="sendBtn"
-                    type="button"
-                    class="ml-3 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-full p-2 transition shrink-0"
-                >
+                <input id="userInput" type="text" placeholder="Ask anything..." class="flex-1 outline-none text-gray-700 bg-transparent text-sm sm:text-base min-w-0" onkeypress="if(event.key === 'Enter') sendMessage()" autocomplete="off">
+                <button onclick="sendMessage()" id="sendBtn" type="button" aria-label="Send" class="ml-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white rounded-full p-2 transition shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
                 </button>
             </div>
+            <!-- <p class="text-center text-xs text-gray-400 mt-2">v1.0.3</p> -->
         </div>
     </div>
 
     <script>
-        const chatHistory = document.getElementById('chatHistory').querySelector('.space-y-4');
+        const messages = document.getElementById('messages');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
+        const chatHistory = document.getElementById('chatHistory');
 
         function appendMessage(role, text) {
             const wrapper = document.createElement('div');
-            wrapper.className = role === 'user'
-                ? 'flex justify-end'
-                : 'flex justify-start';
+            wrapper.className = role === 'user' ? 'flex justify-end' : 'flex justify-start';
 
             const bubble = document.createElement('div');
-            bubble.className = role === 'user'
-                ? 'bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base break-words'
-                : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2 max-w-xs sm:max-w-sm md:max-w-md text-sm sm:text-base shadow-sm break-words whitespace-pre-line';
+            bubble.className = role === 'user' ?
+                'bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-2 max-w-[85%] sm:max-w-md text-sm sm:text-base break-words' :
+                'bg-gray-100 text-gray-800 rounded-2xl rounded-tl-sm px-4 py-2 max-w-[85%] sm:max-w-md text-sm sm:text-base break-words whitespace-pre-line';
 
             bubble.textContent = text;
             wrapper.appendChild(bubble);
-            chatHistory.appendChild(wrapper);
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            messages.appendChild(wrapper);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         function appendTyping() {
             const wrapper = document.createElement('div');
             wrapper.className = 'flex justify-start';
             wrapper.id = 'typingIndicator';
-
             wrapper.innerHTML = `
-                <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm flex gap-1 items-center">
+                <div class="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
                     <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
                     <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
                     <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
                 </div>`;
-            chatHistory.appendChild(wrapper);
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            messages.appendChild(wrapper);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         async function sendMessage() {
             const message = userInput.value.trim();
             if (!message) return;
+
+            // Switch from empty state to chat state on first message
+            if (!document.body.classList.contains('has-messages')) {
+                document.body.classList.add('has-messages');
+            }
 
             appendMessage('user', message);
             userInput.value = '';
@@ -101,14 +111,18 @@
             try {
                 const res = await fetch('/ask', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message
+                    }),
                 });
                 const data = await res.json();
-                document.getElementById('typingIndicator')?.remove();
+                document.getElementById('typingIndicator') ? .remove();
                 appendMessage('bot', data.answer);
             } catch {
-                document.getElementById('typingIndicator')?.remove();
+                document.getElementById('typingIndicator') ? .remove();
                 appendMessage('bot', 'Something went wrong. Please try again.');
             } finally {
                 userInput.disabled = false;
@@ -116,6 +130,16 @@
                 userInput.focus();
             }
         }
+
+        // Hidden upload shortcut: Ctrl/Cmd + Shift + U
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'U' || e.key === 'u')) {
+                e.preventDefault();
+                const key = prompt('Enter upload key:');
+                console.log('Uploading file with key:', key);
+                if (key) window.location.href = '/upload?key=' + encodeURIComponent(key);
+            }
+        });
     </script>
 
 </body>

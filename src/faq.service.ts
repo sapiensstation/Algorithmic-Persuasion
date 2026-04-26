@@ -108,18 +108,81 @@ export class FaqService {
   }
 
   private async parseWord(buffer: Buffer): Promise<FaqSeedItem[]> {
-    // Try table parsing via HTML output first
     const { value: html } = await mammoth.convertToHtml({ buffer });
-    const tableMatch = html.match(/<table[\s\S]*?<\/table>/i);
 
+    // Try Q1. / Q2. numbered question format (most common in this project)
+    const qNumbered = this.parseQNumberedHtml(html);
+    if (qNumbered.length > 0) return qNumbered;
+
+    // Try two-column table
+    const tableMatch = html.match(/<table[\s\S]*?<\/table>/i);
     if (tableMatch) {
-      const items = this.parseHtmlTable(tableMatch[0]);
-      if (items.length > 0) return items;
+      const tableItems = this.parseHtmlTable(tableMatch[0]);
+      if (tableItems.length > 0) return tableItems;
     }
 
-    // Fall back to Q:/A: paragraph format
+    // Fall back to Q:/A: paragraph format in raw text
     const { value: text } = await mammoth.extractRawText({ buffer });
     return this.parseQAText(text);
+  }
+
+  private parseQNumberedHtml(html: string): FaqSeedItem[] {
+    const stripTags = (s: string) => s.replace(/<[^>]+>/g, '').trim();
+
+    // Split into top-level blocks: <p>, <ol>, <ul>
+    const blocks = [
+      ...html.matchAll(/<(p|ol|ul)([^>]*)>([\s\S]*?)<\/(p|ol|ul)>/gi),
+    ];
+
+    const items: FaqSeedItem[] = [];
+    let currentQuestion = '';
+    let answerParts: string[] = [];
+    let capturing = false;
+
+    const flush = () => {
+      if (currentQuestion && answerParts.length > 0) {
+        items.push({ question: currentQuestion, answer: answerParts.join('\n') });
+      }
+      answerParts = [];
+    };
+
+    for (const block of blocks) {
+      const tag = block[1].toLowerCase();
+      const inner = block[3];
+      const text = stripTags(inner).trim();
+
+      if (!text) continue;
+
+      const qMatch = text.match(/^Q\d+\.\s+(.+)/i);
+      if (qMatch) {
+        flush();
+        currentQuestion = qMatch[1].trim().replace(/\.$/, '');
+        capturing = true;
+        continue;
+      }
+
+      if (!capturing) continue;
+
+      if (tag === 'ol' || tag === 'ul') {
+        // Numbered list — extract <li> items and number them
+        const liItems = [...inner.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)].map(
+          (m) => stripTags(m[1]).trim(),
+        );
+        liItems.forEach((li, i) => {
+          if (li) answerParts.push(`${i + 1}. ${li}`);
+        });
+      } else {
+        // Regular paragraph — join multi-para narratives with double newline
+        if (answerParts.length > 0) {
+          answerParts.push('\n' + text);
+        } else {
+          answerParts.push(text);
+        }
+      }
+    }
+
+    flush();
+    return items;
   }
 
   private parseHtmlTable(tableHtml: string): FaqSeedItem[] {

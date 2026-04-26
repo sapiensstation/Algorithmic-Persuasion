@@ -4,9 +4,11 @@ import {
   Get,
   Body,
   Res,
+  Query,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -23,16 +25,26 @@ export class FaqController {
     return this.faqService.getAnswer(message);
   }
 
+  private checkSecret(key?: string) {
+    const expected = process.env.UPLOAD_SECRET;
+    if (!expected || key !== expected) {
+      throw new NotFoundException('Cannot GET /upload');
+    }
+  }
+
   @Get('upload')
-  getUploadPage(@Res() res: Response) {
+  getUploadPage(@Query('key') key: string, @Res() res: Response) {
+    this.checkSecret(key);
     res.sendFile('upload.html', { root: join(process.cwd(), 'public') });
   }
 
   @Post('upload')
-  @UseInterceptors(
-    FileInterceptor('file', { storage: memoryStorage() }),
-  )
-  async uploadFaqFile(@UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  async uploadFaqFile(
+    @Query('key') key: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    this.checkSecret(key);
     if (!file) {
       throw new BadRequestException('No file uploaded.');
     }
