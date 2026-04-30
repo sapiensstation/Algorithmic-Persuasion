@@ -26,7 +26,7 @@ export class FaqController {
   }
 
   private checkSecret(key?: string) {
-    const expected = process.env.UPLOAD_SECRET;
+    const expected = process.env.UPLOAD_KEY;
     if (!expected || key !== expected) {
       throw new NotFoundException('Cannot GET /upload');
     }
